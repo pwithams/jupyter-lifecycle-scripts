@@ -16,7 +16,9 @@ set -e
 #
 
 # PARAMETERS
-IDLE_TIME=3600
+
+# shutdown after 20mins idle time
+IDLE_TIME=1200
 
 echo "Fetching the autostop script"
 wget https://raw.githubusercontent.com/aws-samples/amazon-sagemaker-notebook-instance-lifecycle-config-samples/master/scripts/auto-stop-idle/autostop.py

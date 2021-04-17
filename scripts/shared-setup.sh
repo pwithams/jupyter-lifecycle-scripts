@@ -27,23 +27,6 @@ echo "Starting the SageMaker autostop script in cron"
 
 (crontab -l 2>/dev/null; echo "*/5 * * * * /usr/bin/python $PWD/autostop.py --time $IDLE_TIME --ignore-connections") | crontab -
 
-#------------ install zsh ------------------#
-
-echo "Installing zsh..."
-yum install zsh -y
-
-echo "Downloading ohmyzsh..."
-wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
-
-echo "Installing ohmyzsh as ec2-user..."
-su -c "bash install.sh --unattended" ec2-user
-
-echo "Cleaning up installation files..."
-touch install.sh && rm install.sh
-
-echo "Setting theme..."
-echo "export ZSH_THEME=awesomepanda" >> /etc/profile.d/jupyter-env.sh
-
 #------------ change shell -----------------#
 
 echo "Adding shell config..."
@@ -60,6 +43,10 @@ mkdir -p /home/ec2-user/.jupyter/lab/user-settings/@jupyterlab/apputils-extensio
 echo '{
     "theme": "JupyterLab Dark"
 }' >> /home/ec2-user/.jupyter/lab/user-settings/@jupyterlab/apputils-extension/themes.jupyterlab-settings
+
+#-------- reset kernels -----#
+
+mkdir /tmp/unused-kernels/ && ls /home/ec2-user/anaconda3/envs | grep -v JupyterSystemEnv | grep -v python3 | xargs -I {} mv /home/ec2-user/anaconda3/envs/{} /tmp/unused-kernels
 
 #-------- restart server once all configuration complete ----------#
 

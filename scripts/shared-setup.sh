@@ -25,7 +25,24 @@ wget https://raw.githubusercontent.com/aws-samples/amazon-sagemaker-notebook-ins
 
 echo "Starting the SageMaker autostop script in cron"
 
-(crontab -l 2>/dev/null; echo "*/5 * * * * /usr/bin/python $PWD/autostop.py --time $IDLE_TIME --ignore-connections") | crontab -
+#(crontab -l 2>/dev/null; echo "*/5 * * * * /usr/bin/python $PWD/autostop.py --time $IDLE_TIME --ignore-connections") | crontab -
+
+#------------ install zsh ------------------#
+
+echo "Installing zsh..."
+yum install zsh -y
+
+echo "Downloading ohmyzsh..."
+wget https://raw.github.com/ohmyzsh/ohmyzsh/master/tools/install.sh
+
+echo "Installing ohmyzsh as ec2-user..."
+su -c "bash install.sh --unattended" ec2-user
+
+echo "Cleaning up installation files..."
+touch install.sh && rm install.sh
+
+echo "Setting theme..."
+echo "export ZSH_THEME=awesomepanda" >> /etc/profile.d/jupyter-env.sh
 
 #------------ change shell -----------------#
 
@@ -47,6 +64,45 @@ echo '{
 #-------- reset kernels -----#
 
 mkdir /tmp/unused-kernels/ && ls /home/ec2-user/anaconda3/envs | grep -v JupyterSystemEnv | grep -v python3 | xargs -I {} mv /home/ec2-user/anaconda3/envs/{} /tmp/unused-kernels
+
+#-------- copy persistant files to non persistent home directory -------#
+
+mkdir -p /home/ec2-user/SageMaker/persistent-files
+echo "Place files and directories here (like .zshrc, .ssh) to have them synced to ~/ on startup" > /home/ec2-user/SageMaker/persistent-files/README
+echo "Run `bash ~/sync-files.sh` to sync them now" >> /home/ec2-user/SageMaker/persistent-files/README
+echo "
+# if using zsh, can use *(D) to include dotfiles in glob
+shopt -s dotglob
+cp -r /home/ec2-user/SageMaker/persistent-files/* /home/ec2-user
+shopt -u dotglob
+" > /home/ec2-user/sync-files.sh
+chown -R ec2-user /home/ec2-user/SageMaker/persistent-files
+chown ec2-user /home/ec2-user/sync-files.sh
+bash /home/ec2-user/sync-files.sh
+chmod +x /home/ec2-user/sync-files.sh
+
+#-------- create command to sync specific files back to persistent-files -------#
+
+touch /home/ec2-user/SageMaker/persistent-files.txt
+chown ec2-user /home/ec2-user/SageMaker/persistent-files.txt
+echo "
+cat ~/SageMaker/persistent-files.txt | xargs -I {} cp -r ~/{} ~/SageMaker/persistent-files
+" > /home/ec2-user/persist-files.sh
+chown ec2-user /home/ec2-user/persist-files.sh
+chmod +x /home/ec2-user/persist-files.sh
+
+
+#--------- create /opt/ml/ directories for simulating containers --------#
+
+mkdir -p /opt/ml/data/input
+mkdir -p /opt/ml/data/output
+mkdir -p /opt/ml/models
+
+chown -R ec2-user /opt/ml
+
+#-------- init conda as ec2-user -------#
+
+su ec2-user -c "/home/ec2-user/anaconda3/bin/conda init zsh"
 
 #-------- restart server once all configuration complete ----------#
 

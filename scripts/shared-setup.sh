@@ -17,15 +17,17 @@ set -e
 
 # PARAMETERS
 
-# shutdown after 20mins idle time
-IDLE_TIME=1200
+# shutdown after 2hrs kernel idle time
+# this gives some breathing room for when development using terminal only is being done
+# to avoid shutdown, a notebook cell must be run at least once every 2hrs
+IDLE_TIME=7200
 
 echo "Fetching the autostop script"
 wget https://raw.githubusercontent.com/aws-samples/amazon-sagemaker-notebook-instance-lifecycle-config-samples/master/scripts/auto-stop-idle/autostop.py
 
 echo "Starting the SageMaker autostop script in cron"
 
-#(crontab -l 2>/dev/null; echo "*/5 * * * * /usr/bin/python $PWD/autostop.py --time $IDLE_TIME --ignore-connections") | crontab -
+(crontab -l 2>/dev/null; echo "*/5 * * * * /usr/bin/python $PWD/autostop.py --time $IDLE_TIME --ignore-connections") | crontab -
 
 #------------ install zsh ------------------#
 
@@ -78,7 +80,7 @@ shopt -u dotglob
 " > /home/ec2-user/sync-files.sh
 chown -R ec2-user /home/ec2-user/SageMaker/persistent-files
 chown ec2-user /home/ec2-user/sync-files.sh
-bash /home/ec2-user/sync-files.sh
+su ec2-user -c "bash /home/ec2-user/sync-files.sh"
 chmod +x /home/ec2-user/sync-files.sh
 
 #-------- create command to sync specific files back to persistent-files -------#
